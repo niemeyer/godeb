@@ -18,6 +18,7 @@ var _ = Suite(S{})
 func (S) TestVersionOrder(c *C) {
 	versions := []string{
 		"1.1.1",
+		"1.1",
 		"1.1rc3",
 		"1.1rc2",
 		"1.1rc1",
@@ -25,8 +26,8 @@ func (S) TestVersionOrder(c *C) {
 		"1.0.10",
 		"1.0.3",
 		"1.0.1",
-		"1.0rc1",
 		"1.0",
+		"1.0rc1",
 	}
 
 	for perm := 0; perm < 1000; perm++ {

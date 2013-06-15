@@ -58,7 +58,10 @@ func (tbs tarballSlice) Less(i, j int) bool {
 			}
 		}
 	}
-	if ai < len(a) {
+	if ai < len(a) && (a[ai] == '.' || a[ai] >= '0' && a[ai] <= '9') {
+		return true
+	}
+	if bi < len(b) && b[bi] != '.' && (b[bi] < '0' || b[bi] >= '9') {
 		return true
 	}
 	return false

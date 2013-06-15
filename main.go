@@ -76,7 +76,11 @@ func listCommand() error {
 }
 
 func removeCommand() error {
-	cmd := exec.Command("dpkg", "--remove", "go")
+	args := []string{"dpkg", "--purge", "go"}
+	if os.Getuid() != 0 {
+		args = append([]string{"sudo"}, args...)
+	}
+	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
@@ -132,7 +136,11 @@ func downloadCommand(version string, install bool) error {
 	fmt.Println("package", debName, "ready")
 
 	if install {
-		cmd := exec.Command("dpkg", "-i", debName)
+		args := []string{"dpkg", "-i", debName}
+		if os.Getuid() != 0 {
+			args = append([]string{"sudo"}, args...)
+		}
+		cmd := exec.Command(args[0], args[1:]...)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		if err := cmd.Run(); err != nil {
