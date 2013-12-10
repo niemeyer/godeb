@@ -9,6 +9,7 @@ import (
 	"github.com/blakesmith/ar"
 	"go/build"
 	"io"
+	"os/exec"
 	"strings"
 	"time"
 )
@@ -82,6 +83,20 @@ func debVersion(version string) string {
 		}
 	}
 	return version + "-godeb1"
+}
+
+var errNotInstalled = fmt.Errorf("package go is not installed")
+
+func installedDebVersion() (string, error) {
+	output, err := exec.Command("dpkg-query", "-f", "${db:Status-Abbrev}${source:Version}", "-W", "go").Output()
+	if err != nil {
+		return "", fmt.Errorf("while querying for installed go package version: %v", err)
+	}
+	s := string(output)
+	if !strings.HasPrefix(s, "ii ") {
+		return "", errNotInstalled
+	}
+	return s[3:], nil
 }
 
 func createControl(now time.Time, version string, instSize int64, md5sums []byte) (controlTarGz []byte, err error) {

@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"go/build"
+	"io/ioutil"
 	"launchpad.net/xmlpath"
 	"net/http"
 	"os"
@@ -24,7 +26,7 @@ Available commands:
 
 func main() {
 	if err := run(); err != nil {
-		fmt.Println("error:", err)
+		fmt.Fprintln(os.Stderr, "error:", err)
 		os.Exit(1)
 	}
 }
@@ -55,7 +57,7 @@ func run() error {
 		} else if len(os.Args) > 3 {
 			return fmt.Errorf("too many arguments to %s command", command)
 		}
-		return downloadCommand(version, command == "install")
+		return actionCommand(version, command == "install")
 	case "remove":
 		return removeCommand()
 	default:
@@ -89,7 +91,7 @@ func removeCommand() error {
 	return nil
 }
 
-func downloadCommand(version string, install bool) error {
+func actionCommand(version string, install bool) error {
 	tbs, err := tarballs()
 	if err != nil {
 		return err
@@ -108,6 +110,15 @@ func downloadCommand(version string, install bool) error {
 		if url == "" {
 			return fmt.Errorf("version %s not availble at %s", version, downloadsURL)
 		}
+	}
+
+	installed, err := installedDebVersion()
+	if err == errNotInstalled {
+		// that's okay
+	} else if err != nil {
+		return err
+	} else if install && debVersion(version) == installed {
+		return fmt.Errorf("go version %s is already installed", version)
 	}
 
 	fmt.Println("processing", url)
@@ -163,7 +174,12 @@ func tarballs() ([]*Tarball, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	root, err := xmlpath.ParseHTML(resp.Body)
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("cannot read http response: %v", err)
+	}
+	clearScripts(data)
+	root, err := xmlpath.ParseHTML(bytes.NewBuffer(data))
 	if err != nil {
 		return nil, err
 	}
@@ -194,4 +210,22 @@ func parseURL(url string) (tb *Tarball, ok bool) {
 		return nil, false
 	}
 	return &Tarball{url, s[2:len(s)-len(suffix)]}, true
+}
+
+func clearScripts(data []byte) {
+	startTag := []byte("<script")
+	closeTag := []byte("</script>")
+	var i, j int
+	for {
+		i = j + bytes.Index(data[j:], startTag)
+		if i < j {
+			break
+		}
+		i = i + bytes.IndexByte(data[i:], '>') + 1
+		j = i + bytes.Index(data[i:], closeTag)
+		for i < j {
+			data[i] = ' '
+			i++
+		}
+	}
 }
