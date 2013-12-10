@@ -69,7 +69,18 @@ func debArch() string {
 	return arch
 }
 
+func isDigit(version string, i int) bool {
+	return i >= 0 && i < len(version) && version[i] >= '0' && version[i] <= '9'
+}
+
 func debVersion(version string) string {
+	for _, s := range []string{"rc", "beta"} {
+		i := strings.Index(version, s)
+		if isDigit(version, i-1) && isDigit(version, i+len(s)) {
+			version = version[:i] + "~" + version[i:]
+			break
+		}
+	}
 	return version + "-godeb1"
 }
 
