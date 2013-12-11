@@ -88,9 +88,17 @@ func debVersion(version string) string {
 var errNotInstalled = fmt.Errorf("package go is not installed")
 
 func installedDebVersion() (string, error) {
-	output, err := exec.Command("dpkg-query", "-f", "${db:Status-Abbrev}${source:Version}", "-W", "go").Output()
+	output, err := exec.Command("dpkg-query", "-f", "${db:Status-Abbrev}${source:Version}", "-W", "go").CombinedOutput()
 	if err != nil {
-		return "", fmt.Errorf("while querying for installed go package version: %v", err)
+		msg := err.Error()
+		out := strings.TrimSpace(string(output))
+		if strings.Contains(out, "no packages found") {
+			return "", errNotInstalled
+		}
+		if len(out) > 0 {
+			msg += ": " + out
+		}
+		return "", fmt.Errorf("while querying for installed go package version: %s", msg)
 	}
 	s := string(output)
 	if !strings.HasPrefix(s, "ii ") {
