@@ -9,6 +9,7 @@ import (
 	"github.com/blakesmith/ar"
 	"go/build"
 	"io"
+	"os"
 	"os/exec"
 	"strings"
 	"time"
@@ -88,7 +89,13 @@ func debVersion(version string) string {
 var errNotInstalled = fmt.Errorf("package go is not installed")
 
 func installedDebVersion() (string, error) {
-	output, err := exec.Command("dpkg-query", "-f", "${db:Status-Abbrev}${source:Version}", "-W", "go").CombinedOutput()
+	env := os.Environ()
+	env = setEnv(env, "LC_ALL", "C")
+	env = setEnv(env, "LANG", "C")
+	env = setEnv(env, "LANGUAGE", "C")
+	cmd := exec.Command("dpkg-query", "-f", "${db:Status-Abbrev}${source:Version}", "-W", "go")
+	cmd.Env = env
+	output, err := cmd.CombinedOutput()
 	if err != nil {
 		msg := err.Error()
 		out := strings.TrimSpace(string(output))
@@ -105,6 +112,17 @@ func installedDebVersion() (string, error) {
 		return "", errNotInstalled
 	}
 	return s[3:], nil
+}
+
+func setEnv(env []string, key, value string) []string {
+	key = key + "="
+	for i, s := range env {
+		if strings.HasPrefix(s, key) {
+			env[i] = key + value
+			return env
+		}
+	}
+	return append(env, key+value)
 }
 
 func createControl(now time.Time, version string, instSize int64, md5sums []byte) (controlTarGz []byte, err error) {
