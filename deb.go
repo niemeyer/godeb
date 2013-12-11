@@ -99,7 +99,7 @@ func installedDebVersion() (string, error) {
 	if err != nil {
 		msg := err.Error()
 		out := strings.TrimSpace(string(output))
-		if strings.Contains(out, "no packages found") {
+		if strings.Contains(strings.ToLower(out), "no packages found") {
 			return "", errNotInstalled
 		}
 		if len(out) > 0 {
