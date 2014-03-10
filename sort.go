@@ -1,3 +1,5 @@
+// Copyright 2013-2014 Canonical Ltd.
+
 package main
 
 
