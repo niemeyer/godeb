@@ -91,6 +91,14 @@ func debVersion(version string) string {
 var errNotInstalled = fmt.Errorf("package go is not installed")
 
 func installedDebVersion() (string, error) {
+	if _, err := exec.LookPath("dpkg-query"); err != nil {
+		if e, ok := err.(*exec.Error); ok && e.Err == exec.ErrNotFound {
+			// dpkg is missing. That's okay, we can still build the
+			// package, even if we can't install it.
+			return "", errNotInstalled
+		}
+	}
+
 	env := os.Environ()
 	env = setEnv(env, "LC_ALL", "C")
 	env = setEnv(env, "LANG", "C")
