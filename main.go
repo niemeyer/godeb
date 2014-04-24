@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"fmt"
 	"go/build"
+	"io"
 	"io/ioutil"
 	"launchpad.net/xmlpath"
 	"net/http"
@@ -24,6 +25,7 @@ Available commands:
     install [<version>]
     download [<version>]
     remove
+    fromtarball <tarball> <version>
 `
 
 func main() {
@@ -62,6 +64,24 @@ func run() error {
 		return actionCommand(version, command == "install")
 	case "remove":
 		return removeCommand()
+	case "fromtarball":
+		if len(os.Args) != 4 {
+			return fmt.Errorf("wrong number of arguments to fromtarball command")
+		}
+		tarballName := os.Args[2]
+		version := os.Args[3]
+
+		if !strings.Contains(tarballName, version+".") {
+			fmt.Println(tarballName, version+".")
+			return fmt.Errorf("Tarball does not appear to correspond to given version")
+		}
+
+		file, err := os.Open(tarballName)
+		if err != nil {
+			return fmt.Errorf("Unable to open tarball: %s", err.Error())
+		}
+
+		return fromTarball(version, file, true)
 	default:
 		return fmt.Errorf("unknown command: %s", os.Args[1])
 	}
@@ -133,6 +153,10 @@ func actionCommand(version string, install bool) error {
 	}
 	defer resp.Body.Close()
 
+	return fromTarball(version, resp.Body, install)
+}
+
+func fromTarball(version string, tarball io.Reader, install bool) error {
 	debName := fmt.Sprintf("go_%s_%s.deb", debVersion(version), debArch())
 	deb, err := os.Create(debName + ".inprogress")
 	if err != nil {
@@ -140,10 +164,10 @@ func actionCommand(version string, install bool) error {
 	}
 	defer deb.Close()
 
-	if err := createDeb(version, resp.Body, deb); err != nil {
+	if err := createDeb(version, tarball, deb); err != nil {
 		return err
 	}
-	if err := os.Rename(debName + ".inprogress", debName); err != nil {
+	if err := os.Rename(debName+".inprogress", debName); err != nil {
 		return err
 	}
 	fmt.Println("package", debName, "ready")
@@ -211,7 +235,7 @@ func parseURL(url string) (tb *Tarball, ok bool) {
 	if !strings.HasSuffix(s, suffix) {
 		return nil, false
 	}
-	return &Tarball{url, s[2:len(s)-len(suffix)]}, true
+	return &Tarball{url, s[2 : len(s)-len(suffix)]}, true
 }
 
 func clearScripts(data []byte) {
