@@ -209,6 +209,7 @@ func translateTarball(now time.Time, tarball io.Reader) (dataTarGz, md5sums []by
 		instSize += h.Size
 		h.Name = strings.TrimLeft(h.Name, "./")
 		if first && h.Name != "go" && h.Name != "go/" {
+			first = false
 			h := tar.Header{
 				Name: "./usr/local/go/",
 				Mode: 0755,
