@@ -14,7 +14,7 @@ import (
 	"fmt"
 	"go/build"
 	"io/ioutil"
-	"launchpad.net/xmlpath"
+	"gopkg.in/xmlpath.v1"
 	"net/http"
 	"os"
 	"os/exec"
