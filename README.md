@@ -14,7 +14,7 @@ Installation and usage
 
 To install it, run:
 
-    go get gopkg.in/niemeyer/v0/godeb
+    go get gopkg.in/niemeyer/godeb.v1/cmd/godeb
 
 
 License

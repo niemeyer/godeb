@@ -1,5 +1,12 @@
 // Copyright 2013-2014 Canonical Ltd.
 
+// godeb dynamically translates stock upstream Go tarballs to deb packages.
+//
+// For details of how this tool works and context for why it was built,
+// please refer to the following blog post:
+// 
+//   http://blog.labix.org/2013/06/15/in-flight-deb-packages-of-go
+//
 package main
 
 import (
