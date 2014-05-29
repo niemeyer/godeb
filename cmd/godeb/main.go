@@ -121,7 +121,7 @@ func actionCommand(version string, install bool) error {
 			for _, source := range tarballSources {
 				urls = append(urls, source.url)
 			}
-			return fmt.Errorf("version %s not availble at %s", version, strings.Join(urls, " or "))
+			return fmt.Errorf("version %s not available at %s", version, strings.Join(urls, " or "))
 		}
 	}
 
