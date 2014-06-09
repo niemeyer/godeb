@@ -186,6 +186,7 @@ type tarballSource struct {
 var tarballSources = []tarballSource{
 	{"https://code.google.com/p/go/downloads/list?can=1&q=linux", "//a/@href[contains(., 'go.googlecode.com')]"},
 	{"https://code.google.com/p/go/wiki/Downloads", "//a/@href[contains(., 'storage.googleapis.com')]"},
+	{"http://golang.org/dl/", "//a/@href[contains(., '/dl/')]"},
 }
 
 func tarballs() ([]*Tarball, error) {
@@ -240,6 +241,9 @@ func tarballsFrom(source tarballSource) ([]*Tarball, error) {
 		s := iter.Node().String()
 		if strings.HasPrefix(s, "//") {
 			s = "https:" + s
+		}
+		if strings.HasPrefix(s, "/dl/") {
+			s = source.url + s[4:]
 		}
 		if tb, ok := parseURL(s); ok {
 			tbs = append(tbs, tb)
