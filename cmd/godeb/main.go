@@ -1,5 +1,12 @@
 // Copyright 2013-2014 Canonical Ltd.
 
+// godeb dynamically translates stock upstream Go tarballs to deb packages.
+//
+// For details of how this tool works and context for why it was built,
+// please refer to the following blog post:
+// 
+//   http://blog.labix.org/2013/06/15/in-flight-deb-packages-of-go
+//
 package main
 
 import (
@@ -8,7 +15,7 @@ import (
 	"go/build"
 	"io"
 	"io/ioutil"
-	"launchpad.net/xmlpath"
+	"gopkg.in/xmlpath.v1"
 	"net/http"
 	"os"
 	"os/exec"
@@ -130,7 +137,11 @@ func actionCommand(version string, install bool) error {
 			}
 		}
 		if url == "" {
-			return fmt.Errorf("version %s not availble at %s", version, downloadsURL)
+			var urls []string
+			for _, source := range tarballSources {
+				urls = append(urls, source.url)
+			}
+			return fmt.Errorf("version %s not available at %s", version, strings.Join(urls, " or "))
 		}
 	}
 
@@ -192,10 +203,48 @@ type Tarball struct {
 	Version string
 }
 
-const downloadsURL = "https://code.google.com/p/go/downloads/list?can=1&q=linux"
+type tarballSource struct {
+	url, xpath string
+}
+
+var tarballSources = []tarballSource{
+	{"https://code.google.com/p/go/downloads/list?can=1&q=linux", "//a/@href[contains(., 'go.googlecode.com')]"},
+	{"http://golang.org/dl/", "//a/@href[contains(., 'storage.googleapis.com/golang/')]"},
+}
 
 func tarballs() ([]*Tarball, error) {
-	resp, err := http.Get(downloadsURL)
+	type result struct {
+		tarballs []*Tarball
+		err error
+	}
+	results := make(chan result)
+	for _, source := range tarballSources {
+		source := source
+		go func() {
+			tbs, err := tarballsFrom(source)
+			results <- result{tbs, err}
+		}()
+	}
+
+	var tbs []*Tarball
+	var err error
+	for _ = range tarballSources {
+		r := <-results
+		if r.err != nil {
+			err = r.err
+		} else {
+			tbs = append(tbs, r.tarballs...)
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	sort.Sort(tarballSlice(tbs))
+	return tbs, nil
+}
+
+func tarballsFrom(source tarballSource) ([]*Tarball, error) {
+	resp, err := http.Get(source.url)
 	if err != nil {
 		return nil, err
 	}
@@ -209,18 +258,22 @@ func tarballs() ([]*Tarball, error) {
 	if err != nil {
 		return nil, err
 	}
-	download := xmlpath.MustCompile("//a[@title='Download']/@href")
-
 	var tbs []*Tarball
-	iter := download.Iter(root)
+	iter := xmlpath.MustCompile(source.xpath).Iter(root)
 	for iter.Next() {
-		if tb, ok := parseURL("https:" + iter.Node().String()); ok {
+		s := iter.Node().String()
+		if strings.HasPrefix(s, "//") {
+			s = "https:" + s
+		}
+		if strings.HasPrefix(s, "/dl/") {
+			s = source.url + s[4:]
+		}
+		if tb, ok := parseURL(s); ok {
 			tbs = append(tbs, tb)
 		}
 	}
-	sort.Sort(tarballSlice(tbs))
 	if len(tbs) == 0 {
-		return nil, fmt.Errorf("no downloads available at " + downloadsURL)
+		return nil, fmt.Errorf("no downloads available at " + source.url)
 	}
 	return tbs, nil
 }

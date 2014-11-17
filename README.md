@@ -12,9 +12,14 @@ please refer to the following blog post:
 Installation and usage
 ----------------------
 
-To install it, run:
+If you already have a Go toolset avaliable, run:
 
-    go get gopkg.in/niemeyer/v0/godeb
+    go get gopkg.in/niemeyer/godeb.v1/cmd/godeb
+
+Otherwise, there are pre-built binaries available for the
+[amd64](https://godeb.s3.amazonaws.com/godeb-amd64.tar.gz) and
+[386](https://godeb.s3.amazonaws.com/godeb-386.tar.gz).
+architectures
 
 
 License

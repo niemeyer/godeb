@@ -91,6 +91,14 @@ func debVersion(version string) string {
 var errNotInstalled = fmt.Errorf("package go is not installed")
 
 func installedDebVersion() (string, error) {
+	if _, err := exec.LookPath("dpkg-query"); err != nil {
+		if e, ok := err.(*exec.Error); ok && e.Err == exec.ErrNotFound {
+			// dpkg is missing. That's okay, we can still build the
+			// package, even if we can't install it.
+			return "", errNotInstalled
+		}
+	}
+
 	env := os.Environ()
 	env = setEnv(env, "LC_ALL", "C")
 	env = setEnv(env, "LANG", "C")
@@ -134,10 +142,10 @@ func createControl(now time.Time, version string, instSize int64, md5sums []byte
 
 	body := []byte(fmt.Sprintf(control, debVersion(version), debArch(), instSize/1024))
 	hdr := tar.Header{
-		Name: "control",
-		Size: int64(len(body)),
-		Mode: 0644,
-		ModTime: now,
+		Name:     "control",
+		Size:     int64(len(body)),
+		Mode:     0644,
+		ModTime:  now,
 		Typeflag: tar.TypeReg,
 	}
 	if err := tarball.WriteHeader(&hdr); err != nil {
@@ -148,10 +156,10 @@ func createControl(now time.Time, version string, instSize int64, md5sums []byte
 	}
 
 	hdr = tar.Header{
-		Name: "md5sums",
-		Size: int64(len(md5sums)),
-		Mode: 0644,
-		ModTime: now,
+		Name:     "md5sums",
+		Size:     int64(len(md5sums)),
+		Mode:     0644,
+		ModTime:  now,
 		Typeflag: tar.TypeReg,
 	}
 	if err := tarball.WriteHeader(&hdr); err != nil {
@@ -172,9 +180,9 @@ func createControl(now time.Time, version string, instSize int64, md5sums []byte
 
 func addArFile(now time.Time, w *ar.Writer, name string, body []byte) error {
 	hdr := ar.Header{
-		Name: name,
-		Size: int64(len(body)),
-		Mode: 0644,
+		Name:    name,
+		Size:    int64(len(body)),
+		Mode:    0644,
 		ModTime: now,
 	}
 	if err := w.WriteHeader(&hdr); err != nil {
@@ -209,14 +217,15 @@ func translateTarball(now time.Time, tarball io.Reader) (dataTarGz, md5sums []by
 		instSize += h.Size
 		h.Name = strings.TrimLeft(h.Name, "./")
 		if first && h.Name != "go" && h.Name != "go/" {
+			first = false
 			h := tar.Header{
-				Name: "./usr/local/go/",
-				Mode: 0755,
-				ModTime: h.ModTime,
+				Name:     "./usr/local/go/",
+				Mode:     0755,
+				ModTime:  h.ModTime,
 				Typeflag: tar.TypeDir,
 			}
 			if err := out.WriteHeader(&h); err != nil {
-				return nil, nil, 0, fmt.Errorf("cannot write header of %s to data.tar.gz: %v", h.Name,  err)
+				return nil, nil, 0, fmt.Errorf("cannot write header of %s to data.tar.gz: %v", h.Name, err)
 			}
 		}
 		if !strings.HasPrefix(h.Name, "go/") {
@@ -228,7 +237,7 @@ func translateTarball(now time.Time, tarball io.Reader) (dataTarGz, md5sums []by
 			h.Name += "/"
 		}
 		if err := out.WriteHeader(h); err != nil {
-			return nil, nil, 0, fmt.Errorf("cannot write header of %s to data.tar.gz: %v", h.Name,  err)
+			return nil, nil, 0, fmt.Errorf("cannot write header of %s to data.tar.gz: %v", h.Name, err)
 		}
 		//fmt.Println("packing", h.Name[len(prefix):])
 		if h.Typeflag == tar.TypeDir {
@@ -263,14 +272,14 @@ func translateTarball(now time.Time, tarball io.Reader) (dataTarGz, md5sums []by
 
 func addTarSymlink(now time.Time, out *tar.Writer, name, target string) error {
 	h := tar.Header{
-		Name: name,
+		Name:     name,
 		Linkname: target,
-		Mode: 0777,
-		ModTime: now,
+		Mode:     0777,
+		ModTime:  now,
 		Typeflag: tar.TypeSymlink,
 	}
 	if err := out.WriteHeader(&h); err != nil {
-		return fmt.Errorf("cannot write header of %s to data.tar.gz: %v", h.Name,  err)
+		return fmt.Errorf("cannot write header of %s to data.tar.gz: %v", h.Name, err)
 	}
 	return nil
 }
