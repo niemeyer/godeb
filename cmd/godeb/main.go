@@ -1,13 +1,21 @@
 // Copyright 2013-2014 Canonical Ltd.
 
+// godeb dynamically translates stock upstream Go tarballs to deb packages.
+//
+// For details of how this tool works and context for why it was built,
+// please refer to the following blog post:
+// 
+//   http://blog.labix.org/2013/06/15/in-flight-deb-packages-of-go
+//
 package main
 
 import (
 	"bytes"
 	"fmt"
 	"go/build"
+	"io"
 	"io/ioutil"
-	"launchpad.net/xmlpath"
+	"gopkg.in/xmlpath.v1"
 	"net/http"
 	"os"
 	"os/exec"
@@ -24,6 +32,7 @@ Available commands:
     install [<version>]
     download [<version>]
     remove
+    fromtarball <tarball> <version>
 `
 
 func main() {
@@ -62,6 +71,24 @@ func run() error {
 		return actionCommand(version, command == "install")
 	case "remove":
 		return removeCommand()
+	case "fromtarball":
+		if len(os.Args) != 4 {
+			return fmt.Errorf("wrong number of arguments to fromtarball command")
+		}
+		tarballName := os.Args[2]
+		version := os.Args[3]
+
+		if !strings.Contains(tarballName, version+".") {
+			fmt.Println(tarballName, version+".")
+			return fmt.Errorf("Tarball does not appear to correspond to given version")
+		}
+
+		file, err := os.Open(tarballName)
+		if err != nil {
+			return fmt.Errorf("Unable to open tarball: %s", err.Error())
+		}
+
+		return fromTarball(version, file, true)
 	default:
 		return fmt.Errorf("unknown command: %s", os.Args[1])
 	}
@@ -114,7 +141,7 @@ func actionCommand(version string, install bool) error {
 			for _, source := range tarballSources {
 				urls = append(urls, source.url)
 			}
-			return fmt.Errorf("version %s not availble at %s", version, strings.Join(urls, " or "))
+			return fmt.Errorf("version %s not available at %s", version, strings.Join(urls, " or "))
 		}
 	}
 
@@ -137,6 +164,10 @@ func actionCommand(version string, install bool) error {
 	}
 	defer resp.Body.Close()
 
+	return fromTarball(version, resp.Body, install)
+}
+
+func fromTarball(version string, tarball io.Reader, install bool) error {
 	debName := fmt.Sprintf("go_%s_%s.deb", debVersion(version), debArch())
 	deb, err := os.Create(debName + ".inprogress")
 	if err != nil {
@@ -144,10 +175,10 @@ func actionCommand(version string, install bool) error {
 	}
 	defer deb.Close()
 
-	if err := createDeb(version, resp.Body, deb); err != nil {
+	if err := createDeb(version, tarball, deb); err != nil {
 		return err
 	}
-	if err := os.Rename(debName + ".inprogress", debName); err != nil {
+	if err := os.Rename(debName+".inprogress", debName); err != nil {
 		return err
 	}
 	fmt.Println("package", debName, "ready")
@@ -178,7 +209,7 @@ type tarballSource struct {
 
 var tarballSources = []tarballSource{
 	{"https://code.google.com/p/go/downloads/list?can=1&q=linux", "//a/@href[contains(., 'go.googlecode.com')]"},
-	{"https://code.google.com/p/go/wiki/Downloads", "//a/@href[contains(., 'storage.googleapis.com')]"},
+	{"http://golang.org/dl/", "//a/@href[contains(., 'storage.googleapis.com/golang/')]"},
 }
 
 func tarballs() ([]*Tarball, error) {
@@ -234,6 +265,9 @@ func tarballsFrom(source tarballSource) ([]*Tarball, error) {
 		if strings.HasPrefix(s, "//") {
 			s = "https:" + s
 		}
+		if strings.HasPrefix(s, "/dl/") {
+			s = source.url + s[4:]
+		}
 		if tb, ok := parseURL(s); ok {
 			tbs = append(tbs, tb)
 		}
@@ -254,7 +288,7 @@ func parseURL(url string) (tb *Tarball, ok bool) {
 	if !strings.HasSuffix(s, suffix) {
 		return nil, false
 	}
-	return &Tarball{url, s[2:len(s)-len(suffix)]}, true
+	return &Tarball{url, s[2 : len(s)-len(suffix)]}, true
 }
 
 func clearScripts(data []byte) {
