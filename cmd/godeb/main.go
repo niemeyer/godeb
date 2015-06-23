@@ -28,8 +28,8 @@ var usage = `Usage: godeb <command> [<options> ...]
 Available commands:
 
     list
-    install [<version>]
-    download [<version>]
+    install [<version>] [<package-name>]
+    download [<version>] [<package-name>]
     remove
 `
 
@@ -61,12 +61,17 @@ func run() error {
 		return listCommand()
 	case "download", "install":
 		version := ""
-		if len(os.Args) == 3 {
+		packageName := "go"
+		if len(os.Args) > 2 {
 			version = os.Args[2]
-		} else if len(os.Args) > 3 {
+		}
+		if len(os.Args) > 3 {
+			packageName = os.Args[3]
+		}
+		if len(os.Args) > 4 {
 			return fmt.Errorf("too many arguments to %s command", command)
 		}
-		return actionCommand(version, command == "install")
+		return actionCommand(version, packageName, command == "install")
 	case "remove":
 		return removeCommand()
 	default:
@@ -100,7 +105,7 @@ func removeCommand() error {
 	return nil
 }
 
-func actionCommand(version string, install bool) error {
+func actionCommand(version string, packageName string, install bool) error {
 	tbs, err := tarballs()
 	if err != nil {
 		return err
@@ -125,7 +130,7 @@ func actionCommand(version string, install bool) error {
 		}
 	}
 
-	installed, err := installedDebVersion()
+	installed, err := installedDebVersion(packageName)
 	if err == errNotInstalled {
 		// that's okay
 	} else if err != nil {
@@ -144,14 +149,14 @@ func actionCommand(version string, install bool) error {
 	}
 	defer resp.Body.Close()
 
-	debName := fmt.Sprintf("go_%s_%s.deb", debVersion(version), debArch())
+	debName := fmt.Sprintf("%s_%s_%s.deb", packageName, debVersion(version), debArch())
 	deb, err := os.Create(debName + ".inprogress")
 	if err != nil {
 		return fmt.Errorf("cannot create deb: %v", err)
 	}
 	defer deb.Close()
 
-	if err := createDeb(version, resp.Body, deb); err != nil {
+	if err := createDeb(version, packageName, resp.Body, deb); err != nil {
 		return err
 	}
 	if err := os.Rename(debName+".inprogress", debName); err != nil {

@@ -17,13 +17,13 @@ import (
 	"time"
 )
 
-func createDeb(version string, tarball io.Reader, deb io.Writer) error {
+func createDeb(version string, packageName string, tarball io.Reader, deb io.Writer) error {
 	now := time.Now()
 	dataTarGz, md5sums, instSize, err := translateTarball(now, tarball)
 	if err != nil {
 		return err
 	}
-	controlTarGz, err := createControl(now, version, instSize, md5sums)
+	controlTarGz, err := createControl(now, version, packageName, instSize, md5sums)
 	if err != nil {
 		return err
 	}
@@ -45,7 +45,7 @@ func createDeb(version string, tarball io.Reader, deb io.Writer) error {
 }
 
 const control = `
-Package: go
+Package: %s
 Version: %s
 Architecture: %s
 Maintainer: Gustavo Niemeyer <niemeyer@canonical.com>
@@ -90,7 +90,7 @@ func debVersion(version string) string {
 
 var errNotInstalled = fmt.Errorf("package go is not installed")
 
-func installedDebVersion() (string, error) {
+func installedDebVersion(packageName string) (string, error) {
 	if _, err := exec.LookPath("dpkg-query"); err != nil {
 		if e, ok := err.(*exec.Error); ok && e.Err == exec.ErrNotFound {
 			// dpkg is missing. That's okay, we can still build the
@@ -103,7 +103,7 @@ func installedDebVersion() (string, error) {
 	env = setEnv(env, "LC_ALL", "C")
 	env = setEnv(env, "LANG", "C")
 	env = setEnv(env, "LANGUAGE", "C")
-	cmd := exec.Command("dpkg-query", "-f", "${db:Status-Abbrev}${source:Version}", "-W", "go")
+	cmd := exec.Command("dpkg-query", "-f", "${db:Status-Abbrev}${source:Version}", "-W", packageName)
 	cmd.Env = env
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -135,12 +135,12 @@ func setEnv(env []string, key, value string) []string {
 	return append(env, key+value)
 }
 
-func createControl(now time.Time, version string, instSize int64, md5sums []byte) (controlTarGz []byte, err error) {
+func createControl(now time.Time, version string, packageName string, instSize int64, md5sums []byte) (controlTarGz []byte, err error) {
 	buf := &bytes.Buffer{}
 	compress := gzip.NewWriter(buf)
 	tarball := tar.NewWriter(compress)
 
-	body := []byte(fmt.Sprintf(control, debVersion(version), debArch(), instSize/1024))
+	body := []byte(fmt.Sprintf(control, packageName, debVersion(version), debArch(), instSize/1024))
 	hdr := tar.Header{
 		Name:     "control",
 		Size:     int64(len(body)),
