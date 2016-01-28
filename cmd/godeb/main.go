@@ -4,7 +4,7 @@
 //
 // For details of how this tool works and context for why it was built,
 // please refer to the following blog post:
-// 
+//
 //   http://blog.labix.org/2013/06/15/in-flight-deb-packages-of-go
 //
 package main
@@ -13,8 +13,8 @@ import (
 	"bytes"
 	"fmt"
 	"go/build"
-	"io/ioutil"
 	"gopkg.in/xmlpath.v1"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
@@ -154,7 +154,7 @@ func actionCommand(version string, install bool) error {
 	if err := createDeb(version, resp.Body, deb); err != nil {
 		return err
 	}
-	if err := os.Rename(debName + ".inprogress", debName); err != nil {
+	if err := os.Rename(debName+".inprogress", debName); err != nil {
 		return err
 	}
 	fmt.Println("package", debName, "ready")
@@ -184,14 +184,13 @@ type tarballSource struct {
 }
 
 var tarballSources = []tarballSource{
-	{"https://code.google.com/p/go/downloads/list?can=1&q=linux", "//a/@href[contains(., 'go.googlecode.com')]"},
 	{"http://golang.org/dl/", "//a/@href[contains(., 'storage.googleapis.com/golang/')]"},
 }
 
 func tarballs() ([]*Tarball, error) {
 	type result struct {
 		tarballs []*Tarball
-		err error
+		err      error
 	}
 	results := make(chan result)
 	for _, source := range tarballSources {
@@ -264,7 +263,7 @@ func parseURL(url string) (tb *Tarball, ok bool) {
 	if !strings.HasSuffix(s, suffix) {
 		return nil, false
 	}
-	return &Tarball{url, s[2:len(s)-len(suffix)]}, true
+	return &Tarball{url, s[2 : len(s)-len(suffix)]}, true
 }
 
 func clearScripts(data []byte) {
