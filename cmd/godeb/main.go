@@ -72,7 +72,6 @@ func run() error {
 	default:
 		return fmt.Errorf("unknown command: %s", os.Args[1])
 	}
-	return nil
 }
 
 func listCommand() error {
@@ -184,7 +183,7 @@ type tarballSource struct {
 }
 
 var tarballSources = []tarballSource{
-	{"http://golang.org/dl/", "//a/@href[contains(., 'storage.googleapis.com/golang/')]"},
+	{"https://golang.org/dl/", "//a/@href[contains(., 'redirector.gvt1.com/edgedl/go/')]"},
 }
 
 func tarballs() ([]*Tarball, error) {
