@@ -72,7 +72,6 @@ func run() error {
 	default:
 		return fmt.Errorf("unknown command: %s", os.Args[1])
 	}
-	return nil
 }
 
 func listCommand() error {
