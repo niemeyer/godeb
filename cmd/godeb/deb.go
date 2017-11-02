@@ -50,7 +50,9 @@ Version: %s
 Architecture: %s
 Maintainer: Gustavo Niemeyer <niemeyer@canonical.com>
 Installed-Size: %d
-Conflicts: golang, golang-stable, golang-tip, golang-weekly
+Conflicts: golang-go, golang, golang-stable, golang-tip, golang-weekly
+Replaces: golang-go
+Provides: golang-go
 Section: devel
 Priority: extra
 Homepage: http://golang.org
