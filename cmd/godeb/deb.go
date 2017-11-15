@@ -3,18 +3,19 @@
 package main
 
 import (
-	"archive/tar"
 	"bytes"
 	"compress/gzip"
 	"crypto/md5"
 	"fmt"
-	"github.com/blakesmith/ar"
 	"go/build"
 	"io"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
+
+	"github.com/blakesmith/ar"
+	"github.com/niemeyer/godeb/archive/tar"
 )
 
 func createDeb(version string, tarball io.Reader, deb io.Writer) error {
@@ -214,6 +215,8 @@ func translateTarball(now time.Time, tarball io.Reader) (dataTarGz, md5sums []by
 		if err != nil {
 			return nil, nil, 0, fmt.Errorf("cannot read upstream tarball: %v", err)
 		}
+		h.Format = tar.FormatGNU
+		h.PAXRecords = nil
 		instSize += h.Size
 		h.Name = strings.TrimLeft(h.Name, "./")
 		if first && h.Name != "go" && h.Name != "go/" {
