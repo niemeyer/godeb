@@ -192,6 +192,8 @@ func addArFile(now time.Time, w *ar.Writer, name string, body []byte) error {
 	return err
 }
 
+var processTarHeader = func(h *tar.Header) {}
+
 func translateTarball(now time.Time, tarball io.Reader) (dataTarGz, md5sums []byte, instSize int64, err error) {
 	buf := &bytes.Buffer{}
 	compress := gzip.NewWriter(buf)
@@ -214,6 +216,7 @@ func translateTarball(now time.Time, tarball io.Reader) (dataTarGz, md5sums []by
 		if err != nil {
 			return nil, nil, 0, fmt.Errorf("cannot read upstream tarball: %v", err)
 		}
+		processTarHeader(h)
 		instSize += h.Size
 		h.Name = strings.TrimLeft(h.Name, "./")
 		if first && h.Name != "go" && h.Name != "go/" {
