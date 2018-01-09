@@ -184,7 +184,7 @@ type tarballSource struct {
 }
 
 var tarballSources = []tarballSource{
-	{"http://golang.org/dl/", "//a/@href[contains(., 'storage.googleapis.com/golang/')]"},
+	{"https://golang.org/dl/", "//a[@class='download']/@href"},
 }
 
 func tarballs() ([]*Tarball, error) {
@@ -235,6 +235,7 @@ func tarballsFrom(source tarballSource) ([]*Tarball, error) {
 	}
 	var tbs []*Tarball
 	iter := xmlpath.MustCompile(source.xpath).Iter(root)
+	seen := make(map[string]bool)
 	for iter.Next() {
 		s := iter.Node().String()
 		if strings.HasPrefix(s, "//") {
@@ -243,7 +244,8 @@ func tarballsFrom(source tarballSource) ([]*Tarball, error) {
 		if strings.HasPrefix(s, "/dl/") {
 			s = source.url + s[4:]
 		}
-		if tb, ok := parseURL(s); ok {
+		if tb, ok := parseURL(s); ok && !seen[tb.Version] {
+			seen[tb.Version] = true
 			tbs = append(tbs, tb)
 		}
 	}
