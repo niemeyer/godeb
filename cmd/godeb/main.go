@@ -214,7 +214,7 @@ func tarballs() ([]*Tarball, error) {
 	if err != nil {
 		return nil, err
 	}
-	sort.Sort(tarballSlice(tbs))
+	sort.Sort(sort.Reverse(tarballSlice(tbs)))
 	return tbs, nil
 }
 
