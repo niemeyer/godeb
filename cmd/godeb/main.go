@@ -107,8 +107,8 @@ func actionCommand(version string, install bool) error {
 	}
 	var url string
 	if version == "" {
-		version = tbs[0].Version
-		url = tbs[0].URL
+		version = tbs[len(tbs) - 1].Version
+		url = tbs[len(tbs) - 1].URL
 	} else {
 		for _, tb := range tbs {
 			if version == tb.Version {
