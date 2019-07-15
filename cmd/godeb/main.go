@@ -13,7 +13,7 @@ import (
 	"bytes"
 	"fmt"
 	"go/build"
-	"gopkg.in/xmlpath.v1"
+	"gopkg.in/xmlpath.v2"
 	"io/ioutil"
 	"net/http"
 	"os"
