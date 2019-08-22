@@ -13,7 +13,6 @@ import (
 	"bytes"
 	"fmt"
 	"go/build"
-	"gopkg.in/xmlpath.v1"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -21,6 +20,8 @@ import (
 	"path"
 	"sort"
 	"strings"
+
+	"gopkg.in/xmlpath.v2"
 )
 
 var usage = `Usage: godeb <command> [<options> ...]
