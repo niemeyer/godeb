@@ -233,6 +233,10 @@ func translateTarball(now time.Time, tarball io.Reader) (dataTarGz, md5sums []by
 				return nil, nil, 0, fmt.Errorf("cannot write header of %s to data.tar.gz: %v", h.Name, err)
 			}
 		}
+		// ignoring unneeded build artifacts from go 1.11.5 release tarballs
+		if strings.HasPrefix(h.Name, "gocache/") || strings.HasPrefix(h.Name, "tmp/") {
+			continue
+		}
 		if !strings.HasPrefix(h.Name, "go/") {
 			return nil, nil, 0, fmt.Errorf("upstream tarball has file in unexpected path: %s", h.Name)
 		}
