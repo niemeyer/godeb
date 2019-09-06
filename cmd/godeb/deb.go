@@ -234,7 +234,8 @@ func translateTarball(now time.Time, tarball io.Reader) (dataTarGz, md5sums []by
 			}
 		}
 		if !strings.HasPrefix(h.Name, "go/") {
-			return nil, nil, 0, fmt.Errorf("upstream tarball has file in unexpected path: %s", h.Name)
+			fmt.Fprintln(os.Stderr, "warning: upstream tarball has file in unexpected path", h.Name)
+			continue
 		}
 		const prefix = "./usr/local/"
 		h.Name = prefix + h.Name
