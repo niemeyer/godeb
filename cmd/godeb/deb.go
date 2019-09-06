@@ -5,16 +5,17 @@ package main
 import (
 	"archive/tar"
 	"bytes"
-	"compress/gzip"
 	"crypto/md5"
 	"fmt"
-	"github.com/blakesmith/ar"
 	"go/build"
 	"io"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
+
+	"github.com/blakesmith/ar"
+	gzip "github.com/klauspost/pgzip"
 )
 
 func createDeb(version string, tarball io.Reader, deb io.Writer) error {
