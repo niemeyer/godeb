@@ -68,6 +68,13 @@ Description: Go language compiler and tools (gc)
 `
 
 func debArch() string {
+	cmd := exec.Command("dpkg", "--print-architecture")
+	output, err := cmd.CombinedOutput()
+	if err == nil {
+		return strings.TrimSpace(string(output))
+	}
+
+	//if unable to get the dpkg arch using dpkg command, fallback to GOARCH
 	arch := build.Default.GOARCH
 	if arch == "386" {
 		return "i386"

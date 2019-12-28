@@ -30,7 +30,17 @@ Available commands:
     remove
 `
 
+var (
+	GOARCH = build.Default.GOARCH
+	GOOS = build.Default.GOOS
+)
+
 func main() {
+	if GOARCH == "arm" {
+		GOARCH = "armv6l"
+	}
+
+
 	if err := run(); err != nil {
 		fmt.Fprintln(os.Stderr, "error:", err)
 		os.Exit(1)
@@ -104,8 +114,8 @@ func actionCommand(version string, install bool) error {
 	}
 	var url string
 	if version == "" {
-		version = tbs[0].Version
-		url = tbs[0].URL
+		version = tbs[len(tbs)-1].Version
+		url = tbs[len(tbs)-1].URL
 	} else {
 		for _, tb := range tbs {
 			if version == tb.Version {
@@ -200,7 +210,7 @@ func tarballs() ([]*Tarball, error) {
 	var tbs []*Tarball
 	for _, v := range versions {
 		for _, f := range v.Files {
-			if f.Os == build.Default.GOOS && f.Arch == build.Default.GOARCH {
+			if f.Os == GOOS && f.Arch == GOARCH {
 				t := Tarball{
 					Version: strings.TrimPrefix(f.Version, "go"),
 					URL:     downloadBaseURL + f.Filename}
