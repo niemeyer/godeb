@@ -72,6 +72,9 @@ func debArch() string {
 	if arch == "386" {
 		return "i386"
 	}
+	if arch == "arm" {
+		return "armhf"
+	}
 	return arch
 }
 

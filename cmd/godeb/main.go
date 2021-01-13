@@ -200,6 +200,9 @@ func tarballs() ([]*Tarball, error) {
 	var tbs []*Tarball
 	for _, v := range versions {
 		for _, f := range v.Files {
+			if f.Arch == "armv6l" {
+				f.Arch = "arm"
+			}
 			if f.Os == build.Default.GOOS && f.Arch == build.Default.GOARCH {
 				t := Tarball{
 					Version: strings.TrimPrefix(f.Version, "go"),
